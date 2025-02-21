@@ -123,4 +123,28 @@ public class ISO8601UtilsTest {
     String dateStr = "2018-06-25T61:60:62-03:00";
     assertThrows(ParseException.class, () -> ISO8601Utils.parse(dateStr, new ParsePosition(0)));
   }
+
+    //Test with 3 milliseconds and enter a too large number for seconds
+    @Test
+    public void testDateParseLeapSecondWithMilliseconds() throws ParseException {
+        // This date includes 60 second and 3 milliseconds (".123")
+        String dateStr = "2016-12-31T23:60:60.123Z";
+        
+        // Expect a parse exception due to tot high value for seconds
+        assertThrows(ParseException.class, () -> ISO8601Utils.parse(dateStr, new ParsePosition(0)));
+    }
+  
+    //Test with a mismatched timezone
+    @Test
+    public void testDateParseMismatchedTimezone() {
+          String dateStr = "2018-06-25T12:34:56+99:99";
+          assertThrows(ParseException.class, () -> ISO8601Utils.parse(dateStr, new ParsePosition(0)));
+    }
+    
+    //Test with an invalid timezone
+    @Test
+    public void testDateParseInvalidTimezone() {
+          String dateStr = "2018-06-25T12:34:56?00:00";
+          assertThrows(ParseException.class, () -> ISO8601Utils.parse(dateStr, new ParsePosition(0)));
+    }
 }
