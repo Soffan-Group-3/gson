@@ -39,51 +39,75 @@ import org.junit.Test;
 
 @SuppressWarnings("resource")
 public final class JsonReaderTest {
-	
+
   @Test
   public void testEscapeApostropheInArrayStrictMode() {
     JsonReader reader = new JsonReader(reader("[\"\\'\"]"));
-	reader.setStrictness(Strictness.STRICT);
-	try {
+    reader.setStrictness(Strictness.STRICT);
+    try {
       reader.beginArray();
-	} catch (IOException e) {
-	  e.printStackTrace();
-	}
-	IOException expected = assertThrows(IOException.class, reader::nextString);
-	assertThat(expected)
-	    .hasMessageThat()
-	    .startsWith("Invalid escaped character \"'\" in strict mode");
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    IOException expected = assertThrows(IOException.class, reader::nextString);
+    assertThat(expected)
+        .hasMessageThat()
+        .startsWith("Invalid escaped character \"'\" in strict mode");
   }
-	 
+
+  @SuppressWarnings("deprecation")
+  @Test
+  public void testEqualsGreaterThanWithFillBuffer() throws IOException {
+    JsonReader reader = new JsonReader(reader("{\"key\" => \"value\"}"));
+    reader.setLenient(true);
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("key");
+    assertThat(reader.nextString()).isEqualTo("value");
+    reader.endObject();
+  }
 
   @Test
   public void testEscapeNewlineAtBufferLimitStrictMode() {
-	  char[] longInput = new char[1024];
-	  java.util.Arrays.fill(longInput, 'a');
-	  longInput[1022] = ']';  
-	  longInput[1023] = '\n';  
+    char[] longInput = new char[1024];
+    java.util.Arrays.fill(longInput, 'a');
+    longInput[1022] = ']';
+    longInput[1023] = '\n';
 
-	  JsonReader reader = new JsonReader(reader("[" + new String(longInput) + "]"));
-	  reader.setStrictness(Strictness.STRICT);
-	  try {
-		 reader.beginArray();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-		  e.printStackTrace();
-	   }
-	   IOException expected = assertThrows(IOException.class, reader::nextString);
-	   assertThat(expected)
-	        .hasMessageThat()
-	        .startsWith("Use JsonReader.setStrictness(Strictness.LENIENT) to accept malformed JSON at line 1 column 2");
+    JsonReader reader = new JsonReader(reader("[" + new String(longInput) + "]"));
+    reader.setStrictness(Strictness.STRICT);
+    try {
+      reader.beginArray();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    IOException expected = assertThrows(IOException.class, reader::nextString);
+    assertThat(expected)
+        .hasMessageThat()
+        .startsWith(
+            "Use JsonReader.setStrictness(Strictness.LENIENT) to accept malformed JSON at line 1"
+                + " column 2");
   }
-	  
+
+  @Test
+  public void testInvalidNestingLimit() {
+    JsonReader reader = new JsonReader(reader("{\"key\" => \"value\"}"));
+    int i = -1;
+    IllegalArgumentException expected =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> {
+              reader.setNestingLimit(i);
+            });
+    assertThat(expected).hasMessageThat().startsWith("Invalid nesting limit: -1");
+  }
+
   @Test
   public void testValidEscapeSequencesStrictMode() throws IOException {
-	  JsonReader reader = new JsonReader(reader("\"\\\\\\\"\\b\\f\\n\\r\\t\\u1234\""));
-	  reader.setStrictness(Strictness.STRICT);
-	  assertThat(reader.nextString()).isEqualTo("\\\"\b\f\n\r\t\u1234");
+    JsonReader reader = new JsonReader(reader("\"\\\\\\\"\\b\\f\\n\\r\\t\\u1234\""));
+    reader.setStrictness(Strictness.STRICT);
+    assertThat(reader.nextString()).isEqualTo("\\\"\b\f\n\r\t\u1234");
   }
-	
 
   @Test
   public void testDefaultStrictness() {
