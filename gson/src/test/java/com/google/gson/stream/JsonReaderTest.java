@@ -106,6 +106,7 @@ public final class JsonReaderTest {
     JsonReader reader = new JsonReader(reader("\"\\\\\\\"\\b\\f\\n\\r\\t\\u1234\""));
     reader.setStrictness(Strictness.STRICT);
     assertThat(reader.nextString()).isEqualTo("\\\"\b\f\n\r\t\u1234");
+  }
   public void testUnquotedName() throws Exception {
     JsonReader reader = new JsonReader(new StringReader("{unquoted: 1, \"b\": 123}"));
     reader.setStrictness(Strictness.LENIENT);
