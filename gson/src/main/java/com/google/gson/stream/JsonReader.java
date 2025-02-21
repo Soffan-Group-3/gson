@@ -28,6 +28,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Objects;
 
 /**
@@ -311,6 +312,9 @@ public class JsonReader implements Closeable {
    */
   private String[] pathNames = new String[32];
   private int[] pathIndices = new int[32];
+  
+  public HashMap<Integer, Boolean> coverageCheck = new HashMap<>();
+  public int coverageID = 0;
 
   /** Creates a new instance that reads a JSON-encoded stream from {@code in}. */
   public JsonReader(Reader in) {
@@ -782,76 +786,110 @@ public class JsonReader implements Closeable {
     charactersOfNumber:
     for (; true; i++) {
       if (p + i == l) {
+        // ID: 1
+        coverageCheck.put(1, true);
         if (i == buffer.length) {
+          // ID: 2
+          coverageCheck.put(2, true);
           // Though this looks like a well-formed number, it's too long to continue reading. Give up
           // and let the application handle this as an unquoted literal.
           return PEEKED_NONE;
         }
         if (!fillBuffer(i + 1)) {
+          // ID: 3
+          coverageCheck.put(3, true);
           break;
         }
+        // ID: 4
+        coverageCheck.put(4, true);
         p = pos;
         l = limit;
       }
 
       char c = buffer[p + i];
+      coverageCheck.put(5, true);
       switch (c) {
         case '-':
+          coverageCheck.put(6, true);
           if (last == NUMBER_CHAR_NONE) {
+            coverageCheck.put(7, true);
             negative = true;
             last = NUMBER_CHAR_SIGN;
             continue;
           } else if (last == NUMBER_CHAR_EXP_E) {
+            coverageCheck.put(8, true);
             last = NUMBER_CHAR_EXP_SIGN;
             continue;
           }
+          coverageCheck.put(9, true);
           return PEEKED_NONE;
 
         case '+':
+          coverageCheck.put(10, true);
           if (last == NUMBER_CHAR_EXP_E) {
+            coverageCheck.put(11, true);
             last = NUMBER_CHAR_EXP_SIGN;
             continue;
           }
+          coverageCheck.put(12, true);
           return PEEKED_NONE;
 
         case 'e':
+          coverageCheck.put(13, true);
         case 'E':
+          coverageCheck.put(14, true);
           if (last == NUMBER_CHAR_DIGIT || last == NUMBER_CHAR_FRACTION_DIGIT) {
             last = NUMBER_CHAR_EXP_E;
+            coverageCheck.put(15, true);
             continue;
           }
+          coverageCheck.put(16, true);
           return PEEKED_NONE;
 
         case '.':
+          coverageCheck.put(17, true);
           if (last == NUMBER_CHAR_DIGIT) {
+            coverageCheck.put(18, true);
             last = NUMBER_CHAR_DECIMAL;
             continue;
           }
+          coverageCheck.put(19, true);
           return PEEKED_NONE;
 
         default:
+          coverageCheck.put(20, true);
           if (c < '0' || c > '9') {
+            coverageCheck.put(21, true);
             if (!isLiteral(c)) {
+              coverageCheck.put(22, true);
               break charactersOfNumber;
             }
+            coverageCheck.put(23, true);
             return PEEKED_NONE;
           }
+          coverageCheck.put(24, true);
           if (last == NUMBER_CHAR_SIGN || last == NUMBER_CHAR_NONE) {
+            coverageCheck.put(25, true);
             value = -(c - '0');
             last = NUMBER_CHAR_DIGIT;
           } else if (last == NUMBER_CHAR_DIGIT) {
+            coverageCheck.put(26, true);
             if (value == 0) {
+              coverageCheck.put(27, true);
               return PEEKED_NONE; // Leading '0' prefix is not allowed (since it could be octal).
             }
+            coverageCheck.put(28, true);
             long newValue = value * 10 - (c - '0');
             fitsInLong &=
                 value > MIN_INCOMPLETE_INTEGER
                     || (value == MIN_INCOMPLETE_INTEGER && newValue < value);
             value = newValue;
           } else if (last == NUMBER_CHAR_DECIMAL) {
+            coverageCheck.put(29, true);
             last = NUMBER_CHAR_FRACTION_DIGIT;
           } else if (last == NUMBER_CHAR_EXP_E || last == NUMBER_CHAR_EXP_SIGN) {
             last = NUMBER_CHAR_EXP_DIGIT;
+            coverageCheck.put(30, true);
           }
       }
     }
