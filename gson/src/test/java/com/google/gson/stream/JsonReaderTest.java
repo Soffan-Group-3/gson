@@ -41,6 +41,35 @@ import org.junit.Test;
 public final class JsonReaderTest {
 
   @Test
+  public void testUnquotedName() throws Exception {
+    JsonReader reader = new JsonReader(new StringReader("{unquoted: 1, \"b\": 123}"));
+    reader.setStrictness(Strictness.LENIENT);
+
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("unquoted");
+    reader.skipValue(); // Skip the unquoted value
+    assertThat(reader.nextName()).isEqualTo("b");
+    assertThat(reader.nextInt()).isEqualTo(123);
+
+    reader.endObject();
+    assertThat(reader.peek()).isEqualTo(JsonToken.END_DOCUMENT);
+  }
+
+  @Test
+  public void testSingleQuotedName() throws Exception {
+    JsonReader reader = new JsonReader(new StringReader("{'singleQuoted': 1, \"b\": 123}"));
+    reader.setStrictness(Strictness.LENIENT);
+    reader.beginObject();
+    assertThat(reader.nextName()).isEqualTo("singleQuoted");
+    reader.skipValue(); // Skip the single-quoted value
+    assertThat(reader.nextName()).isEqualTo("b");
+    assertThat(reader.nextInt()).isEqualTo(123);
+
+    reader.endObject();
+    assertThat(reader.peek()).isEqualTo(JsonToken.END_DOCUMENT);
+  }
+
+  @Test
   public void testDefaultStrictness() {
     JsonReader reader = new JsonReader(reader("{}"));
     assertThat(reader.getStrictness()).isEqualTo(Strictness.LEGACY_STRICT);
