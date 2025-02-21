@@ -34,6 +34,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -47,6 +48,93 @@ public final class JsonReaderTest {
 	public static void afterClass() {
 		System.out.println(coverage.toString());
 	}
+
+	@Test
+	public void testUnquotedName() throws Exception {
+		JsonReader jsonReader = new JsonReader(new StringReader("{unquoted: 1}"));
+		jsonReader.setStrictness(Strictness.LENIENT);
+
+		int unused = jsonReader.doPeek();
+		jsonReader.skipValue();
+
+
+		Field pathNamesField = JsonReader.class.getDeclaredField("pathNames");
+		pathNamesField.setAccessible(true);
+		String[] pathNames = (String[]) pathNamesField.get(jsonReader);
+
+
+		Field stackSizeField = JsonReader.class.getDeclaredField("stackSize");
+		stackSizeField.setAccessible(true);
+		int stackSize = stackSizeField.getInt(jsonReader);
+
+
+		assertThat(pathNames[stackSize - 1]).isEqualTo("<skipped>");
+	}
+
+	@Test
+	public void testSingleQuotedName() throws Exception {
+		JsonReader jsonReader = new JsonReader(new StringReader("{'singleQuoted': 1}"));
+		jsonReader.setStrictness(Strictness.LENIENT);
+
+		int unused = jsonReader.doPeek();
+		jsonReader.skipValue();
+
+
+		Field pathNamesField = JsonReader.class.getDeclaredField("pathNames");
+		pathNamesField.setAccessible(true);
+		String[] pathNames = (String[]) pathNamesField.get(jsonReader);
+
+
+		Field stackSizeField = JsonReader.class.getDeclaredField("stackSize");
+		stackSizeField.setAccessible(true);
+		int stackSize = stackSizeField.getInt(jsonReader);
+
+		assertThat(pathNames[stackSize - 1]).isEqualTo("<skipped>");
+	}
+
+  @Test
+  public void testEscapeApostropheInArrayStrictMode() {
+    JsonReader reader = new JsonReader(reader("[\"\\'\"]"));
+    reader.setStrictness(Strictness.STRICT);
+    try {
+      reader.beginArray();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    IOException expected = assertThrows(IOException.class, reader::nextString);
+    assertThat(expected)
+            .hasMessageThat()
+            .startsWith("Invalid escaped character \"'\" in strict mode");
+  }
+
+
+  @Test
+  public void testEscapeNewlineAtBufferLimitStrictMode() {
+    char[] longInput = new char[1024];
+    java.util.Arrays.fill(longInput, 'a');
+    longInput[1022] = ']';
+    longInput[1023] = '\n';
+
+    JsonReader reader = new JsonReader(reader("[" + new String(longInput) + "]"));
+    reader.setStrictness(Strictness.STRICT);
+    try {
+      reader.beginArray();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    IOException expected = assertThrows(IOException.class, reader::nextString);
+    assertThat(expected)
+            .hasMessageThat()
+            .startsWith("Use JsonReader.setStrictness(Strictness.LENIENT) to accept malformed JSON at line 1 column 2");
+  }
+
+  @Test
+  public void testValidEscapeSequencesStrictMode() throws IOException {
+    JsonReader reader = new JsonReader(reader("\"\\\\\\\"\\b\\f\\n\\r\\t\\u1234\""));
+    reader.setStrictness(Strictness.STRICT);
+    assertThat(reader.nextString()).isEqualTo("\\\"\b\f\n\r\t\u1234");
+  }
 
 	@Test
 	public void testDefaultStrictness() {
